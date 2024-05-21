@@ -1,0 +1,15 @@
+[workspace]
+[package]
+version = "0.1.0"
+name = "bn254-benchmark-script"
+edition = "2021"
+
+[dependencies]
+sp1-sdk = { git = "https://github.com/succinctlabs/sp1.git", branch = "main" }
+
+[build-dependencies]
+sp1-helper = { git = "https://github.com/succinctlabs/sp1.git", branch = "main"  }
+
+[dev-dependencies]
+bn = { package = "substrate-bn", version = "0.6", default-features = false }
+hex = "0.4"
