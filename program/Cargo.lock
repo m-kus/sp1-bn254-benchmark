@@ -654,6 +654,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp1-precompiles"
+version = "0.1.0"
+source = "git+https://github.com/succinctlabs/sp1.git#10495837c72f046aaccc81b81dc3c9055e3bf3a2"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "cfg-if",
+ "getrandom",
+ "hex",
+ "k256",
+ "num",
+ "rand",
+ "serde",
+ "snowbridge-amcl",
+]
+
+[[package]]
 name = "sp1-zkvm"
 version = "0.1.0"
 source = "git+https://github.com/succinctlabs/sp1.git?branch=main#9d41254c7f81de3aef5953c841cf2a512057b4f3"
@@ -667,7 +684,7 @@ dependencies = [
  "rand",
  "serde",
  "sha2",
- "sp1-precompiles",
+ "sp1-precompiles 0.1.0 (git+https://github.com/succinctlabs/sp1.git?branch=main)",
 ]
 
 [[package]]
@@ -689,14 +706,14 @@ dependencies = [
 [[package]]
 name = "substrate-bn"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b5bbfa79abbae15dd642ea8176a21a635ff3c00059961d1ea27ad04e5b441c"
+source = "git+https://github.com/m-kus/substrate-bn-sp1?rev=bd17d5b9b38ee7e556fd1cd55f08e2959f538c0b#bd17d5b9b38ee7e556fd1cd55f08e2959f538c0b"
 dependencies = [
  "byteorder",
  "crunchy",
  "lazy_static",
  "rand",
  "rustc-hex",
+ "sp1-precompiles 0.1.0 (git+https://github.com/succinctlabs/sp1.git)",
 ]
 
 [[package]]

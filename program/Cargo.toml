@@ -9,3 +9,6 @@ sp1-zkvm = { git = "https://github.com/succinctlabs/sp1.git", branch = "main" }
 sp1-derive = { git = "https://github.com/succinctlabs/sp1.git", branch = "main" }
 bn = { package = "substrate-bn", version = "0.6", default-features = false }
 hex = "0.4"
+
+[patch.crates-io]
+bn = { package = "substrate-bn", git = "https://github.com/m-kus/substrate-bn-sp1", rev = "bd17d5b9b38ee7e556fd1cd55f08e2959f538c0b" }

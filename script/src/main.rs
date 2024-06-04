@@ -11,8 +11,8 @@ pub const G1_C_MUL_D: &str = "070a8d6a982153cae4be29d434e8faef8a47b274a053f5a4ee
 
 pub const G2_A: &str = "1ecfd2dff2aad18798b64bdb0c2b50c9d73e6c05619e04cbf5b448fd987268800e16c8d96362720af0916592be1b839a26f5e6b710f3ede0d8840d9a70eaf97f2aa778acda9e7d4925c60ad84c12fb3b4f2b9539d5699934b0e6fdd10cc2c0e11e8f2c1f441fed039bb46d6bfb91236cf7ba240c75080cedbe40e049c46b26be";
 pub const G2_B: &str = "1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c212c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b";
-pub const G2_C: &str = "1ecfd2dff2aad18798b64bdb0c2b50c9d73e6c05619e04cbf5b448fd987268800e16c8d96362720af0916592be1b839a26f5e6b710f3ede0d8840d9a70eaf97f2aa778acda9e7d4925c60ad84c12fb3b4f2b9539d5699934b0e6fdd10cc2c0e11e8f2c1f441fed039bb46d6bfb91236cf7ba240c75080cedbe40e049c46b26be";
-pub const FR_D2: &str = "03ccf842d4f12075ac9acbfc7d467e30736b9bd5adc2ac0aa21a9708b9cbdb8e";
+pub const G2_C: &str = "1b456e8f0f931657ef38681c6ba9503861c2a43161098bf6ed0d4a1c9dad8d8912f3ad32a637feee230eb77b3794645e81694129775c2ba5742550e02a26b86925192143313355e82635421b3cca6546a18d8de4cd273e88169a7239dd32c6572b8bff0df12a623a20f884776e3c9bc912e4bd148d838c7d85f2217feecd219e";
+pub const FR_D2: &str = "000b8a5ca04ade1fcdecc669db1861eba5ba2f3e336bdbcba1d5b3c11c2b3eaa";
 pub const G2_A_SUM_B: &str = "028ed67dc28dc89a3af1a0dc9d212f71349244df651c68c619885b3e30a392e315f7967dae56ea5434d6918f1bdf261e7f76241baf6d90f1c7aa6345defdd5740a10114ead33e3d235f03e90003f5dd30f87ce1874ec45b06fa3d02cffc83c541bafecee364a3c2b6b1d6cb7eae1c6886f667e3d7e905d6a14a1fe6ee070f63c";
 pub const G2_C_MUL_D: &str = "17093252104cabf33e3807a6da5825f8c3c21a41b6aef9004576b4a11eda6bdc09c7727ad2e8cec21dab67c6420d47aab06c5580b736a5200c43e33b35b159ee2d446e0f6750e69b9c869daeb261c8d9051c0b7e7c29263c9f50b3a8cc7f036a2d5f047d94c986a41aac2b39c2863e52e2ed84ba6c9aef0b9b31054d07fdde08";
 
@@ -31,13 +31,12 @@ fn main() {
     stdin.write(&FR_D2);
 
     let client = ProverClient::new();
-    let (pk, _) = client.setup(ELF);
-    let mut proof = client.prove_compressed(&pk, stdin).expect("proving failed");
+    let mut public_values = client.execute(ELF, stdin).expect("proving failed");
 
-    let g1_a_sum_b = proof.public_values.read::<String>();
-    let g1_c_mul_d = proof.public_values.read::<String>();
-    let g2_a_sum_b = proof.public_values.read::<String>();
-    let g2_c_mul_d = proof.public_values.read::<String>();
+    let g1_a_sum_b = public_values.read::<String>();
+    let g1_c_mul_d = public_values.read::<String>();
+    let g2_a_sum_b = public_values.read::<String>();
+    let g2_c_mul_d = public_values.read::<String>();
   
     assert_eq!(&G1_A_SUM_B, &g1_a_sum_b);
     assert_eq!(&G1_C_MUL_D, &g1_c_mul_d);
@@ -47,7 +46,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use bn::{AffineG2, Fq, Fq2, Fr, Group, G2};
+    use bn::{AffineG1, AffineG2, Fq, Fq2, Fr, Group, G1, G2};
+
+    use crate::{FR_D1, FR_D2, G1_A, G1_A_SUM_B, G1_B, G1_C, G1_C_MUL_D, G2_A, G2_A_SUM_B, G2_B, G2_C, G2_C_MUL_D};
 
     fn serialize_g2(g2: G2) -> String {
         let g2 = AffineG2::from_jacobian(g2).unwrap();
@@ -57,46 +58,68 @@ mod tests {
         g2.y().real().to_big_endian(&mut output[64..96]).unwrap();
         g2.y().imaginary().to_big_endian(&mut output[96..]).unwrap();
         hex::encode(output)
-    }    
+    }
+
+    fn read_g1(data: &str) -> G1 {
+        let data = hex::decode(data).unwrap();
+        AffineG1::new(
+            Fq::from_slice(&data[..32]).unwrap(),
+            Fq::from_slice(&data[32..]).unwrap(),
+        )
+        .unwrap()
+        .into()
+    }
+
+    fn read_g2(data: &str) -> G2 {
+        let data = hex::decode(data).unwrap();
+        AffineG2::new(
+            Fq2::new(
+                Fq::from_slice(&data[..32]).unwrap(),
+                Fq::from_slice(&data[32..64]).unwrap(),
+            ),
+            Fq2::new(
+                Fq::from_slice(&data[64..96]).unwrap(),
+                Fq::from_slice(&data[96..]).unwrap(),
+            ),
+        )
+        .unwrap()
+        .into()
+    }
+
+    fn read_scalar(data: &str) -> Fr {
+        let data = hex::decode(data).unwrap();
+        Fr::from_slice(&data).unwrap()
+    }
+
+    #[ignore]
+    #[test]
+    fn g1_test_vectors() {
+        let a = read_g1(G1_A);
+        let b = read_g1(G1_B);
+        let a_sum_b = read_g1(G1_A_SUM_B);
+        let res = a + b;
+        assert_eq!(a_sum_b, res);
+
+        let c = read_g1(G1_C);
+        let d = read_scalar(FR_D1);
+        let c_mul_d = read_g1(G1_C_MUL_D);
+        let res = c * d;
+        assert_eq!(c_mul_d, res);
+    }
 
     #[ignore]
     #[test]
     fn g2_test_vectors() {
-        let a = G2::one()
-            * Fr::from_str(
-                "20390255904278144451778773028944684152769293537511418234311120800877067946",
-            ).unwrap();
-        println!("A: {}", serialize_g2(a));
+        let a = read_g2(G2_A);
+        let b = read_g2(G2_B);
+        let a_sum_b = read_g2(G2_A_SUM_B);
+        let res = a + b;
+        assert_eq!(a_sum_b, res);
 
-        let b: G2 = AffineG2::new(
-            Fq2::new(
-                Fq::from_str("10857046999023057135944570762232829481370756359578518086990519993285655852781")
-                    .expect("a-coeff of g2 x generator is of the right order"),
-                Fq::from_str("11559732032986387107991004021392285783925812861821192530917403151452391805634")
-                    .expect("b-coeff of g2 x generator is of the right order"),
-            ),
-            Fq2::new(
-                Fq::from_str("8495653923123431417604973247489272438418190587263600148770280649306958101930")
-                    .expect("a-coeff of g2 y generator is of the right order"),
-                Fq::from_str("4082367875863433681332203403145435568316851327593401208105741076214120093531")
-                    .expect("b-coeff of g2 y generator is of the right order"),
-            ),
-        ).unwrap().into();
-        println!("B: {}", serialize_g2(b));
-        println!("A + B: {}", serialize_g2(a + b));
-
-        let c = G2::one()
-            * Fr::from_str(
-                "18097487326282793650237947474982649264364522469319914492172746413872781676",
-            ).unwrap();
-        println!("C: {}", serialize_g2(a));
-
-        let d = Fr::from_str("20390255904278144451778773028944684152769293537511418234311120800877067946")
-            .unwrap();
-        
-        let mut d_bytes = [0u8; 32];
-        d.to_big_endian(&mut d_bytes).unwrap();
-        println!("D: {}", hex::encode(d_bytes));
-        println!("C * D: {}", serialize_g2(c * d));
+        let c = read_g2(G2_C);
+        let d = read_scalar(FR_D2);
+        let c_mul_d = read_g2(G2_C_MUL_D);
+        let res = c * d;
+        assert_eq!(c_mul_d, res);
     }
 }
