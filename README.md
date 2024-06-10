@@ -2,6 +2,8 @@
 
 Benchmarking original and [patched](https://github.com/m-kus/substrate-bn-sp1) `bn` crate that uses `sys_bigint` precompile for modular multiplication.  
 
+Also running E2E benchmarks for [REVM](https://github.com/bluealloy/revm) `alt-bn128-*` precompiles.
+
 ## Run
 
 Make sure you have SP1 toolchain [installed](https://succinctlabs.github.io/sp1/getting-started/install.html).
@@ -26,3 +28,6 @@ Based on a single run to get rough estimates (TODO: do random sampling for more 
 | G2 multiplication | 31,221,329 | 8,644,149 |
 | Miller loop | 33,175,157 | 9,449,627 |
 | Final exponentiation | 45,323,747 | 14,574,801 |
+| `revm_precompile::bn128::run_add` | 168,171 | 113,580 |
+| `revm_precompile::bn128::run_mul` | 1,865,971 | 506,454 |
+| `revm_precompile::bn128::run_pair` | 213,099,695 | 63,800,732 |
